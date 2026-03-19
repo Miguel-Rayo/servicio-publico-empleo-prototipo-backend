@@ -7,7 +7,8 @@ app = FastAPI(title="Servicio de Empleo API", version="1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # puerto de Vite/React
+    allow_origins=["http://localhost:5173",
+                  "https://servicio-publico-empleo-prototipo-f.vercel.app"],  # puerto de Vite/React
     allow_methods=["*"],
     allow_headers=["*"],
 )
