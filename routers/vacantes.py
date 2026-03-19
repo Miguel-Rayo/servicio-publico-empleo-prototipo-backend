@@ -276,31 +276,6 @@ def experiencia_vs_estudios():
     conn.close()
     return data
 
-
-@router.get("/top-prestadores")
-def top_prestadores():
-    """Top 20 prestadores con más vacantes publicadas"""
-    conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("""
-        SELECT
-            p.nombre_prestador,
-            COUNT(DISTINCT p.codigo_vacante)        AS total_vacantes,
-            SUM(v.cantidad_vacantes)                AS total_plazas,
-            COUNT(DISTINCT v.departamento)          AS departamentos_cubiertos
-        FROM prestadores p
-        JOIN vacantes v ON p.codigo_vacante = v.codigo_vacante
-        WHERE p.nombre_prestador IS NOT NULL
-        GROUP BY p.nombre_prestador
-        ORDER BY total_vacantes DESC
-        LIMIT 20
-    """)
-    data = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return data
-
-
 @router.get("/inclusion")
 def inclusion():
     """Análisis de vacantes para población vulnerable"""
@@ -363,7 +338,80 @@ def inclusion():
         "discapacidad_por_estudios":     discapacidad_estudios,
     }
 
+@router.get("/brecha-sectorial")
+def brecha_sectorial():
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT
+            sector_economico,
+            COUNT(*) AS total_vacantes,
+            SUM(cantidad_vacantes) AS total_plazas,
+            COUNT(DISTINCT departamento) AS departamentos,
+            COUNT(DISTINCT municipio) AS municipios,
+            ROUND(AVG(meses_experiencia_cargo), 1) AS experiencia_promedio
+        FROM vacantes
+        WHERE sector_economico IS NOT NULL
+        GROUP BY sector_economico
+        ORDER BY total_vacantes DESC
+        LIMIT 15
+    """)
+    data = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return data
 
+
+@router.get("/top-prestadores")
+def top_prestadores():
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT
+            p.nombre_prestador,
+            COUNT(DISTINCT p.codigo_vacante) AS total_vacantes,
+            SUM(v.cantidad_vacantes)         AS total_plazas,
+            COUNT(DISTINCT v.departamento)   AS departamentos_cubiertos
+        FROM (
+            SELECT nombre_prestador, codigo_vacante
+            FROM prestadores
+            WHERE nombre_prestador IS NOT NULL
+            GROUP BY nombre_prestador, codigo_vacante
+        ) p
+        JOIN vacantes v ON p.codigo_vacante = v.codigo_vacante
+        GROUP BY p.nombre_prestador
+        ORDER BY total_vacantes DESC
+        LIMIT 15
+    """)
+    data = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return data
+
+"""
+@router.get("/top-prestadores")
+def top_prestadores():
+    """Top 20 prestadores con más vacantes publicadas"""
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT
+            p.nombre_prestador,
+            COUNT(DISTINCT p.codigo_vacante)        AS total_vacantes,
+            SUM(v.cantidad_vacantes)                AS total_plazas,
+            COUNT(DISTINCT v.departamento)          AS departamentos_cubiertos
+        FROM prestadores p
+        JOIN vacantes v ON p.codigo_vacante = v.codigo_vacante
+        WHERE p.nombre_prestador IS NOT NULL
+        GROUP BY p.nombre_prestador
+        ORDER BY total_vacantes DESC
+        LIMIT 20
+    """)
+    data = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return data
+    
 @router.get("/brecha-sectorial")
 def brecha_sectorial():
     """Sectores con mayor concentración de vacantes vs distribución geográfica"""
@@ -387,3 +435,4 @@ def brecha_sectorial():
     cursor.close()
     conn.close()
     return data
+"""
